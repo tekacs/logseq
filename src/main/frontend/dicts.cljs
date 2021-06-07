@@ -238,6 +238,7 @@
                   "Search"
                   "Search or Create Page")
         :page-search "Search in the current page"
+        :graph-search "Search graph"
         :new-page "New page"
         :new-file "New file"
         :graph "Graph"

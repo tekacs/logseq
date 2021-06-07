@@ -143,6 +143,8 @@
     (let [pages (when-not all? (map (fn [page] {:type :page :data page}) pages))
           files (when-not all? (map (fn [file] {:type :file :data file}) files))
           blocks (map (fn [block] {:type :block :data block}) blocks)
+          route (state/sub-current-route)
+          graph? (= route :graph)
           search-mode (state/get-search-mode)
           new-page (if (or
                         (and (seq pages)
@@ -154,7 +156,11 @@
                      [{:type :new-page}])
           result (if config/publishing?
                    (concat pages files blocks)
-                   (concat new-page pages files blocks))]
+                   (concat new-page pages files blocks))
+          result (if graph?
+                   (cons {:type :graph-add-filter}
+                         result)
+                   result)]
       [:div.rounded-md.shadow-lg
        {:style (merge
                 {:top 48
@@ -170,6 +176,9 @@
                       (search-handler/clear-search!)
                       (leave-focus)
                       (case type
+                        :graph-add-filter
+                        (prn search-q)
+
                         :new-page
                         (page-handler/create! search-q)
 
@@ -214,8 +223,14 @@
                               nil)
                             (search-handler/clear-search!))
          :item-render (fn [{:keys [type data]}]
+                        (prn {:type type
+                              :data data})
                         (let [search-mode (state/get-search-mode)]
                           [:div {:class "py-2"} (case type
+                                                  :graph-add-filter
+                                                  [:div.text.font-bold "Add new filter: "
+                                                   [:span.ml-1 (str "\"" search-q "\"")]]
+
                                                   :new-page
                                                   [:div.text.font-bold (str (t :new-page) ": ")
                                                    [:span.ml-1 (str "\"" search-q "\"")]]
@@ -260,6 +275,8 @@
         show-result? (boolean (seq search-result))
         blocks-count (or (db/blocks-count) 0)
         search-mode (state/sub :search/mode)
+        route (state/sub-current-route)
+        graph? (= route :graph)
         timeout (cond
                   (util/electron?)
                   180
@@ -278,8 +295,15 @@
           svg/search]
          [:input#search-field.block.w-full.h-full.pr-3.py-2.rounded-md.focus:outline-none.placeholder-gray-500.focus:placeholder-gray-400.sm:text-sm.sm:bg-transparent
           {:style {:padding-left "2rem"}
-           :placeholder (if (= search-mode :page)
+           :placeholder (cond
+                          graph?
+
+                          (t :graph-search)
+
+                          (= search-mode :page)
                           (t :page-search)
+
+                          :else
                           (t :search))
            :auto-complete (if (util/chrome?) "chrome-off" "off") ; off not working here
            :default-value ""
@@ -296,13 +320,14 @@
                                            {:page-db-id (:db/id (db/entity [:block/name (string/lower-case current-page)]))})
                                          {})]
                               (state/set-q! value)
-                              (reset! search-timeout
-                                      (js/setTimeout
-                                       (fn []
-                                         (if (= :page search-mode)
-                                           (search-handler/search (state/get-current-repo) value opts)
-                                           (search-handler/search (state/get-current-repo) value)))
-                                       timeout))))))}]
+                              (when-not graph?
+                                (reset! search-timeout
+                                        (js/setTimeout
+                                         (fn []
+                                           (if (= :page search-mode)
+                                             (search-handler/search (state/get-current-repo) value opts)
+                                             (search-handler/search (state/get-current-repo) value)))
+                                         timeout)))))))}]
          (when-not (string/blank? search-q)
            (ui/css-transition
             {:class-names "fade"

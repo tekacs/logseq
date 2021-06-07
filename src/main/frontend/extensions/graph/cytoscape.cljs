@@ -60,7 +60,6 @@
                                  :else
                                  (utils/cyHighlight @*cy-instance e)))))))
                   (.on cy "mouseover" "node" (fn [e]
-                                               (js/console.dir e)
                                                (when-let [target (gobj/get e "target")]
                                                  (when-let [id (.id target)]
                                                    (reset! *current-node id)))))
@@ -71,19 +70,19 @@
                                     (.removeClass (.elements cy) "semitransp")
                                     (.removeClass (.elements cy) "highlight"))))
                 state)}
-  [{:keys [nodes links] :as graph} {:keys [width height dark? layout-name]
-                                    :or {layout-name "grid"}}]
+  [{:keys [nodes links] :as graph} {:keys [width height dark? layout]
+                                    :or {layout "grid"}}]
   (let [elements (->> (concat nodes links)
                       (map (fn [m] {:data m})))]
     [:div.relative
      (cytoscape-component
       {:elements (bean/->js elements)
        :layout (cond->
-                 {:name layout-name
+                 {:name layout
                   :fit true
                   :avoidOverlap true
                   :nodeDimensionsIncludeLabels true}
-                 (= layout-name "cose")
+                 (= layout "cose")
                  (merge {:idealEdgeLength edge-length
                          :edgeElasticity edge-length}))
        :zoom 1

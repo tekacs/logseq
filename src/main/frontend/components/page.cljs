@@ -427,6 +427,7 @@
   (let [theme (state/sub :ui/theme)
         sidebar-open? (state/sub :ui/sidebar-open?)
         [width height] (rum/react layout)
+        graph-layout (or (state/sub :graph/layout) "grid")
         dark? (= theme "dark")
         graph (profile "build global graph" (graph-handler/build-global-graph theme (rum/react show-journal?)))]
     (rum/with-context [[t] i18n/*tongue-context*]
@@ -434,16 +435,34 @@
        (if (seq (:nodes graph))
          (cytoscape/graph graph {:dark? dark?
                                  :width width
-                                 :height height})
+                                 :height height
+                                 :layout graph-layout})
          [:div.ls-center.mt-20
           [:p.opacity-70.font-medium "Empty"]])
        [:div.absolute.top-10.left-5
         [:div.flex.flex-col
-         [:a.text-sm.font-medium
-          {:on-click (fn [_e]
-                       (swap! show-journal? not))}
-          (str (t :page/show-journals)
-               (if @show-journal? " (ON)"))]]]])))
+         [:table.table-auto
+          [:tr
+           [:td [:span.font-medium.text-sm "Filters"]]
+           ]
+          [:tr
+           [:td [:span.font-medium.text-sm "Journals"]]
+           [:td (ui/toggle @show-journal?
+                           (fn [_e]
+                             (swap! show-journal? not))
+                           true)]]
+          [:tr
+           [:td [:span.font-medium.text-sm "Layout"]]
+           [:td (ui/select
+                  (map (fn [item]
+                         (if (= (:label item) graph-layout)
+                           (assoc item :selected "selected")
+                           item))
+                    [{:label "grid"}
+                     {:label "cose"}
+                     {:label "dagre"}])
+                  (fn [value]
+                    (state/set-graph-layout! value)))]]]]]])))
 
 (rum/defc all-pages < rum/reactive
   ;; {:did-mount (fn [state]

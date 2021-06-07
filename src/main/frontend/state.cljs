@@ -67,6 +67,7 @@
                             false)
     ;; remember scroll positions of visited paths
     :ui/paths-scroll-positions {}
+    :graph/layout "grid"
 
     :document/mode? (or (storage/get :document/mode?) false)
 
@@ -135,6 +136,16 @@
   []
   (get-in (get-route-match) [:data :name]))
 
+(defn sub
+  [ks]
+  (if (coll? ks)
+    (util/react (rum/cursor-in state ks))
+    (util/react (rum/cursor state ks))))
+
+(defn sub-current-route
+  []
+  (get-in (sub :route-match) [:data :name]))
+
 (defn home?
   []
   (= :home (get-current-route)))
@@ -149,12 +160,6 @@
 (defn route-has-p?
   []
   (get-in (get-route-match) [:query-params :p]))
-
-(defn sub
-  [ks]
-  (if (coll? ks)
-    (util/react (rum/cursor-in state ks))
-    (util/react (rum/cursor state ks))))
 
 (defn set-state!
   [path value]
@@ -1291,3 +1296,7 @@
 (defn get-editor-cp
   []
   (get-in @state [:view/components :editor]))
+
+(defn set-graph-layout!
+  [value]
+  (set-state! :graph/layout value))
