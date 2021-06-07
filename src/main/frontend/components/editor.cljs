@@ -22,6 +22,7 @@
             [frontend.commands :as commands
              :refer [*show-commands
                      *matched-commands
+                     *first-command-group
                      *slash-caret-pos
                      *angle-bracket-caret-pos
                      *matched-block-commands
@@ -33,28 +34,41 @@
   [id format]
   (let [show-commands? (util/react *show-commands)]
     (when (and show-commands?
-              @*slash-caret-pos
-              (not (state/sub :editor/show-page-search?))
-              (not (state/sub :editor/show-block-search?))
-              (not (state/sub :editor/show-template-search?))
-              (not (state/sub :editor/show-input))
-              (not (state/sub :editor/show-date-picker?)))
-     (let [matched (util/react *matched-commands)]
-       (ui/auto-complete
-        (map first matched)
-        {:on-chosen (fn [chosen]
-                      (reset! commands/*current-command chosen)
-                      (let [command-steps (get (into {} matched) chosen)
-                            restore-slash? (or
-                                            (contains? #{"Today" "Yesterday" "Tomorrow"} chosen)
-                                            (and
-                                             (not (fn? command-steps))
-                                             (not (contains? (set (map first command-steps)) :editor/input))
-                                             (not (contains? #{"Date Picker" "Template" "Deadline" "Scheduled" "Upload an image"} chosen))))]
-                        (editor-handler/insert-command! id command-steps
-                                                        format
-                                                        {:restore? restore-slash?})))
-         :class     "black"})))))
+               @*slash-caret-pos
+               (not (state/sub :editor/show-page-search?))
+               (not (state/sub :editor/show-block-search?))
+               (not (state/sub :editor/show-template-search?))
+               (not (state/sub :editor/show-input))
+               (not (state/sub :editor/show-date-picker?)))
+      (let [matched (util/react *matched-commands)]
+        (ui/auto-complete
+         matched
+         {:get-group-name
+          (fn [item]
+            (get *first-command-group (first item)))
+
+          :item-render
+          (fn [item]
+            (let [command-name (first item)
+                  command-doc (get item 2)]
+              [:div {:title command-doc} command-name]))
+
+          :on-chosen
+          (fn [chosen-item]
+            (let [command (first chosen-item)]
+              (reset! commands/*current-command command)
+              (let [command-steps (get (into {} matched) command)
+                    restore-slash? (or
+                                    (contains? #{"Today" "Yesterday" "Tomorrow"} command)
+                                    (and
+                                     (not (fn? command-steps))
+                                     (not (contains? (set (map first command-steps)) :editor/input))
+                                     (not (contains? #{"Date Picker" "Template" "Deadline" "Scheduled" "Upload an image"} command))))]
+                (editor-handler/insert-command! id command-steps
+                                                format
+                                                {:restore? restore-slash?}))))
+          :class
+          "black"})))))
 
 (rum/defc block-commands < rum/reactive
   [id format]

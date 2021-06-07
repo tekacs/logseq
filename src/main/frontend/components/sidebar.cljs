@@ -233,7 +233,7 @@
                   :exit 300}}
        links
        ;; (custom-context-menu-content)
-))))
+       ))))
 
 (rum/defc new-block-mode < rum/reactive
   []
@@ -318,7 +318,7 @@
           :route-match route-match})
         [:div.#app-container.h-screen.flex
          [:div.flex-1.h-full.flex.flex-col.overflow-y-auto#left-container.relative
-          [:div.scrollbar-spacing#main-container
+          [:div.scrollbar-spacing.flex.flex-col.h-full#main-container
            (header/header {:open-fn        open-fn
                            :white?         white?
                            :current-repo   current-repo
@@ -357,4 +357,4 @@
          ;;   :on-click (fn []
          ;;               (state/set-left-sidebar-open! (not (state/get-left-sidebar-open?))))}
          ;;  (if (state/sub :ui/left-sidebar-open?) "<" ">")]
-)]))))
+          )]))))
